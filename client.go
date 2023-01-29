@@ -19,8 +19,8 @@ func New(client *mongo.Client, name string, ctx context.Context) *DB {
 	return &DB{client.Database(name), client, ctx}
 }
 
-func (db DB) Disconnect() {
-	db.client.Disconnect(db.ctx)
+func (db DB) Disconnect() error {
+	return db.client.Disconnect(db.ctx)
 }
 
 // Collection is the wrapper for Mongo Collection
