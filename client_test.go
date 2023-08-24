@@ -65,6 +65,23 @@ func TestCollection_FindOne(t *testing.T) {
 	t.Logf("Found document: %+v", result)
 }
 
+func TestCollection_FindMany(t *testing.T) {
+	client, db, _ := setupTestDB(t)
+	defer cleanupTestDB(t, client)
+
+	coll := db.NewCollection("testcollection")
+
+	testFilter := bson.D{{Key: "data", Value: "test"}}
+	var result []any
+
+	err := coll.FindMany(context.Background(), testFilter, &result)
+	if err != nil {
+		t.Fatalf("FindOne failed: %v", err)
+	}
+
+	t.Logf("Found document: %+v", result)
+}
+
 func TestMain(m *testing.M) {
 	// Setup code, if any
 	retCode := m.Run()
