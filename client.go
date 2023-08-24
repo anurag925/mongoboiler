@@ -12,35 +12,33 @@ import (
 type DB struct {
 	db     *mongo.Database
 	client *mongo.Client
-	ctx    context.Context
 }
 
-func New(client *mongo.Client, name string, ctx context.Context) *DB {
-	return &DB{client.Database(name), client, ctx}
+func New(client *mongo.Client, name string) *DB {
+	return &DB{client.Database(name), client}
 }
 
-func (db DB) Disconnect() error {
-	return db.client.Disconnect(db.ctx)
+func (db DB) Disconnect(ctx context.Context) error {
+	return db.client.Disconnect(ctx)
 }
 
 // Collection is the wrapper for Mongo Collection
 type Collection struct {
-	*DB
 	collection *mongo.Collection
 }
 
 func (wrapper *DB) NewCollection(collectionName string) *Collection {
-	return &Collection{wrapper, wrapper.db.Collection(collectionName)}
+	return &Collection{wrapper.db.Collection(collectionName)}
 }
 
 // Drop drops the current Collection (collection)
-func (c Collection) Drop() error {
-	return c.collection.Drop(c.ctx)
+func (c Collection) Drop(ctx context.Context) error {
+	return c.collection.Drop(ctx)
 }
 
 // FindOne finds first document that satisfies filter and fills res with the un marshaled document.
-func (c Collection) FindOne(filter bson.D, res any) error {
-	err := c.collection.FindOne(c.ctx, filter).Decode(res)
+func (c Collection) FindOne(ctx context.Context, filter bson.D, res any) error {
+	err := c.collection.FindOne(ctx, filter).Decode(res)
 	if err != nil {
 		return err
 	}
@@ -48,11 +46,10 @@ func (c Collection) FindOne(filter bson.D, res any) error {
 }
 
 // FindMany iterates cursor of all docs matching filter and fills res with un marshalled documents.
-func (c Collection) FindMany(filter bson.D, res *[]any) error {
+func (c Collection) FindMany(ctx context.Context, filter bson.D, res *[]any) error {
 	arrType := reflect.TypeOf(res).Elem()
-	cursor, err := c.collection.Find(c.ctx, filter)
+	cursor, err := c.collection.Find(ctx, filter)
 
-	ctx := c.ctx
 	for cursor.Next(ctx) {
 		doc := reflect.New(arrType).Interface()
 		err := cursor.Decode(&doc)
@@ -74,8 +71,8 @@ func (c Collection) FindMany(filter bson.D, res *[]any) error {
 
 // UpdateOne updates single document matching filter and applies update to it.
 // Returns number of documents matched and modified. Should always be either 0 or 1.
-func (c Collection) UpdateOne(filter, update bson.D) (int64, int64, error) {
-	updateRes, err := c.collection.UpdateOne(c.ctx, filter, update)
+func (c Collection) UpdateOne(ctx context.Context, filter, update bson.D) (int64, int64, error) {
+	updateRes, err := c.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -84,8 +81,8 @@ func (c Collection) UpdateOne(filter, update bson.D) (int64, int64, error) {
 
 // UpdateMany updates all documents matching the filter by applying the update query on it.
 // Returns number of documents matched and modified.
-func (c Collection) UpdateMany(filter, update bson.D) (int64, int64, error) {
-	updateRes, err := c.collection.UpdateMany(c.ctx, filter, update)
+func (c Collection) UpdateMany(ctx context.Context, filter, update bson.D) (int64, int64, error) {
+	updateRes, err := c.collection.UpdateMany(ctx, filter, update)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -94,8 +91,8 @@ func (c Collection) UpdateMany(filter, update bson.D) (int64, int64, error) {
 
 // InsertOne inserts a single struct as a document into the database and returns its ID.
 // Returns inserted ID
-func (c Collection) InsertOne(new any) (any, error) {
-	insertRes, err := c.collection.InsertOne(c.ctx, new)
+func (c Collection) InsertOne(ctx context.Context, new any) (any, error) {
+	insertRes, err := c.collection.InsertOne(ctx, new)
 	if err != nil {
 		return "", err
 	}
@@ -104,8 +101,8 @@ func (c Collection) InsertOne(new any) (any, error) {
 
 // InsertMany takes a slice of structs, inserts them into the database.
 // Returns list of inserted IDs
-func (c Collection) InsertMany(new []any) (any, error) {
-	insertRes, err := c.collection.InsertMany(c.ctx, new)
+func (c Collection) InsertMany(ctx context.Context, new []any) (any, error) {
+	insertRes, err := c.collection.InsertMany(ctx, new)
 	if err != nil {
 		return "", err
 	}
@@ -113,8 +110,8 @@ func (c Collection) InsertMany(new []any) (any, error) {
 }
 
 // DeleteOne deletes single document that match the bson.D filter
-func (c Collection) DeleteOne(filter bson.D) error {
-	_, err := c.collection.DeleteOne(c.ctx, filter)
+func (c Collection) DeleteOne(ctx context.Context, filter bson.D) error {
+	_, err := c.collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}
@@ -122,8 +119,8 @@ func (c Collection) DeleteOne(filter bson.D) error {
 }
 
 // DeleteMany deletes all documents that match the bson.D filter
-func (c Collection) DeleteMany(filter bson.D) error {
-	_, err := c.collection.DeleteMany(c.ctx, filter)
+func (c Collection) DeleteMany(ctx context.Context, filter bson.D) error {
+	_, err := c.collection.DeleteMany(ctx, filter)
 	if err != nil {
 		return err
 	}
